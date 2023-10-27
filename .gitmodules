@@ -1,0 +1,3 @@
+[submodule "linux"]
+	path = linux
+	url = https://gitlab.com/ubports/porting/reference-device-ports/halium12/volla-x23/kernel-volla-mt6789
