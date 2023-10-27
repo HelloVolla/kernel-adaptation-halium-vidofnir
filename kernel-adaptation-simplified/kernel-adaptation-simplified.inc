@@ -66,6 +66,7 @@ BuildRequires:  openssl
 BuildRequires:  dtc
 BuildRequires:  clang
 BuildRequires:  lld
+BuildRequires:  llvm
 
 %if 0%{?crossbuild:1}
 BuildRequires:  cross-%{crossbuild}-gcc
