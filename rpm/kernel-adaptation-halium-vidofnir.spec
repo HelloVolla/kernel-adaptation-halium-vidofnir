@@ -35,7 +35,7 @@
 # Apply Patches
 %define apply_patches 1
 
-%define ramdisk ramdisk-mimameid.img
+%define ramdisk ramdisk-vidofnir.img
 ##define build_dtboimg 1
 
 # Build and pick-up the following devicetrees
