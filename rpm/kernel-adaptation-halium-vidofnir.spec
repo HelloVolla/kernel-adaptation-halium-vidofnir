@@ -42,21 +42,20 @@
 ##define devicetrees
 
 #Device Info
-%define  deviceinfo_kernel_cmdline bootopt=64S3,32N2,64N2 systempart=/dev/mapper/system
-%define  deviceinfo_dtb mediatek/mt6789.dtb
-%define  deviceinfo_flash_pagesize 4096
-%define  deviceinfo_flash_offset_base 0x0
-%define  deviceinfo_flash_offset_kernel 0x40000000
-%define  deviceinfo_flash_offset_ramdisk 0x66f00000
-%define  deviceinfo_flash_offset_tags 0x47c80000
-%define  deviceinfo_flash_offset_dtb 0x47c80000
-%define  deviceinfo_bootimg_qcdt false
-%define  deviceinfo_bootimg_header_version 4
-%define  deviceinfo_bootimg_partition_size 67108864
-%define  deviceinfo_bootimg_os_version 12
-%define  deviceinfo_bootimg_os_patch_level 2022-06
-%define  deviceinfo_rootfs_image_sector_size 4096
-%define  deviceinfo_halium_version 12
-
+%define deviceinfo_kernel_cmdline bootopt=64S3,32N2,64N2 systempart=/dev/mapper/system
+%define deviceinfo_dtb mediatek/mt6789.dtb
+%define deviceinfo_flash_pagesize 4096
+%define deviceinfo_flash_offset_base 0x0
+%define deviceinfo_flash_offset_kernel 0x40000000
+%define deviceinfo_flash_offset_ramdisk 0x66f00000
+%define deviceinfo_flash_offset_tags 0x47c80000
+%define deviceinfo_flash_offset_dtb 0x47c80000
+%define deviceinfo_bootimg_qcdt false
+%define deviceinfo_bootimg_header_version 4
+%define deviceinfo_bootimg_partition_size 67108864
+%define deviceinfo_bootimg_os_version 12
+%define deviceinfo_bootimg_os_patch_level 2022-06
+%define deviceinfo_rootfs_image_sector_size 4096
+%define deviceinfo_halium_version 12
 
 %include kernel-adaptation-simplified/kernel-adaptation-simplified.inc
