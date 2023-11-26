@@ -53,7 +53,7 @@ Requires(pre):  kmod >= 9
 BuildRequires:  pkgconfig(ncurses)
 BuildRequires:  pkgconfig(openssl)
 BuildRequires:  mer-kernel-checks
-#BuildRequires:  kmod >= 9
+BuildRequires:  kmod >= 9
 #BuildRequires:  perl
 #BuildRequires:  fdupes
 BuildRequires:  flex
@@ -67,6 +67,7 @@ BuildRequires:  dtc
 BuildRequires:  clang
 BuildRequires:  lld
 BuildRequires:  llvm
+BuildRequires:  lz4
 
 %if 0%{?crossbuild:1}
 BuildRequires:  cross-%{crossbuild}-gcc
@@ -94,8 +95,11 @@ export CROSS_COMPILE=%{crossbuild}-meego-linux-gnu-
 export PATH=/opt/cross/bin/:$PATH
 %endif
 
-defconfig_name=$(basename %{defconfig})
-[ -e "./%{defconfig}" ] && cp -f ./%{defconfig} %{source_directory}/arch/%{kernel_arch}/configs/$defconfig_name
+#defconfig_name=$(basename %{defconfig})
+#[ -e "./%{defconfig}" ] && cp -f ./%{defconfig} %{source_directory}/arch/%{kernel_arch}/configs/$defconfig_name
+
+[ -e "./%{extra_config}" ] && cp -f ./%{extra_config} %{source_directory}/arch/%{kernel_arch}/configs/%{extra_config}
+
 
 %if 0%{?apply_patches:1}
 #Apply any patches
@@ -105,12 +109,14 @@ sh patches/apply-patches.sh %{source_directory}
 
 echo "***** Cleaning *****"
 #make -C %{source_directory} O=out clean
+#rm -rf %{source_directory}/out/*
 
-echo "***** Making defconfig *****"
-make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} O=out defconfig KBUILD_DEFCONFIG=$defconfig_name
+#echo "***** Making defconfig *****"
+#make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} O=out defconfig KBUILD_DEFCONFIG=$defconfig_name
 
 %if 0%{?build_Image:1}
 echo "***** Building Image *****"
+DTC_EXT=/usr/bin/dtc make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} -j$(nproc) O=out %{kcflags} %{defconfig}
 DTC_EXT=/usr/bin/dtc make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} -j$(nproc) O=out %{kcflags}
 %endif
 
@@ -124,7 +130,13 @@ echo "***** Building DTBO Image *****"
 python2 kernel-adaptation-simplified/mkdtboimg.py create linux/out/dtbo.img %{source_directory}/out/arch/%{kernel_arch}/boot/dts/%{deviceinfo_dtbo}
 %endif
 
-ls -lh %{source_directory}/out/arch/%{kernel_arch}/boot/*Image*
+%install
+echo "***** Installing *****"
+
+%if %{build_modules}
+    mkdir -p %{buildroot}/lib/modules
+    make -C %{source_directory} O=out %{compiler} %{compileropts} INSTALL_MOD_STRIP=1 modules_install INSTALL_MOD_PATH=%{buildroot}
+%endif
 
 echo "***** Building Boot Image *****"
 KERNEL=%{source_directory}/out/arch/%{kernel_arch}/boot/Image.gz
@@ -141,20 +153,47 @@ if [ "%{deviceinfo_bootimg_header_version}" -eq 2 ]; then
     EXTRA_ARGS+=" --dtb $DTB --dtb_offset %{deviceinfo_flash_offset_dtb}"
 fi
 
-python3 ./kernel-adaptation-simplified/mkbootimg.py --kernel "$KERNEL" --ramdisk "$RAMDISK" --cmdline "%{deviceinfo_kernel_cmdline}" --header_version %{deviceinfo_bootimg_header_version} -o "$OUT" --os_version %{deviceinfo_bootimg_os_version} --os_patch_level %{deviceinfo_bootimg_os_patch_level} $EXTRA_ARGS
+#Createl boot.img
+if [ "%{deviceinfo_bootimg_header_version}" -le 2 ]; then
+    python3 ./kernel-adaptation-simplified/mkbootimg.py --kernel "$KERNEL" --ramdisk "$RAMDISK" --cmdline "%{deviceinfo_kernel_cmdline}" --header_version %{deviceinfo_bootimg_header_version} -o "$OUT" --os_version %{deviceinfo_bootimg_os_version} --os_patch_level %{deviceinfo_bootimg_os_patch_level} $EXTRA_ARGS
+else
+    python3 ./kernel-adaptation-simplified/mkbootimg.py --kernel "$KERNEL" --ramdisk "$RAMDISK" --header_version %{deviceinfo_bootimg_header_version} -o "$OUT" --os_version %{deviceinfo_bootimg_os_version} --os_patch_level %{deviceinfo_bootimg_os_patch_level} $EXTRA_ARGS
 
+    # Build vendor_boot
+    %if 0%{?build_vendor_boot:1}
+        export DEVICEINFO_KERNEL_CMDLINE="%{deviceinfo_kernel_cmdline}"
+        export DEVICEINFO_DTB=%{deviceinfo_dtb}
+        export DEVICEINFO_RAMDISK_COMPRESSION=%{deviceinfo_ramdisk_compression}
+        export DEVICEINFO_FLASH_PAGESIZE=%{deviceinfo_flash_pagesize}
+        export DEVICEINFO_FLASH_OFFSET_BASE=%{deviceinfo_flash_offset_base}
+        export DEVICEINFO_FLASH_OFFSET_KERNEL=%{deviceinfo_flash_offset_kernel}
+        export DEVICEINFO_FLASH_OFFSET_RAMDISK=%{deviceinfo_flash_offset_ramdisk}
+        export DEVICEINFO_FLASH_OFFSET_TAGS=%{deviceinfo_flash_offset_tags}
+        export DEVICEINFO_FLASH_OFFSET_DTB=%{deviceinfo_flash_offset_dtb}
+        export DEVICEINFO_BOOTIMG_QCDT=%{deviceinfo_bootimg_qcdt}
+        export DEVICEINFO_BOOTIMG_HEADER_VERSION=%{deviceinfo_bootimg_header_version}
+        export DEVICEINFO_BOOTIMG_PARTITION_SIZE=%{deviceinfo_bootimg_partition_size}
+        export DEVICEINFO_BOOTIMG_OS_VERSION=%{deviceinfo_bootimg_os_version}
+        export DEVICEINFO_BOOTIMG_OS_PATCH_LEVEL=%{deviceinfo_bootimg_os_patch_level}
+        export DEVICEINFO_ROOTFS_IMAGE_SECTOR_SIZE=%{deviceinfo_rootfs_image_sector_size}
+        export DEVICEINFO_HALIUM_VERSION=%{deviceinfo_halium_version}
+        export DEVICEINFO_KERNEL_DISABLE_MODULES=%{deviceinfo_kernel_disable_modules}
+
+        bash ./kernel-adaptation-simplified/mkvendorboot.sh "$DTB"
+    %endif
+fi
+
+#Use AVB Tool to create final boot.img
 if [ -n "%{deviceinfo_bootimg_partition_size}" ]; then
     EXTRA_ARGS=""
     [ -f "$HERE/rsa4096_boot.pem" ] && EXTRA_ARGS=" --key $HERE/rsa4096_boot.pem --algorithm SHA256_RSA4096"
     python2 "./kernel-adaptation-simplified/avbtool" add_hash_footer --image "$OUT" --partition_name boot --partition_size %{deviceinfo_bootimg_partition_size} $EXTRA_ARGS
 
-    if [ -n "$deviceinfo_bootimg_append_vbmeta" ] && $deviceinfo_bootimg_append_vbmeta; then
+    if [ -n "%{deviceinfo_bootimg_append_vbmeta}" ] && %{deviceinfo_bootimg_append_vbmeta}; then
         python2 "./kernel-adaptation-simplified/avbtool" append_vbmeta_image --image "$OUT" --partition_size "%{deviceinfo_bootimg_partition_size}" --vbmeta_image "$TMPDOWN/vbmeta.img"
     fi
 fi
 
-%install
-echo "***** Installing *****"
 mkdir -p %{buildroot}/boot
 
 %if %{build_Image}
@@ -176,13 +215,10 @@ done
 cp %{source_directory}/out/dtbo.img %{buildroot}/boot/ || true
 %endif
 
-%if %{build_modules}
-    mkdir -p %{buildroot}/lib/modules
-    make -C %{source_directory} O=out modules_install INSTALL_MOD_PATH=%{buildroot}
-%endif
 
 # Build filelist
 find %{buildroot} ! \( -type d \) | sed -e s,"%{buildroot}",,g> %{_tmpdir}/kernel-adaptation.files
+
 
 %post
 # This oneshot is enabled only during package upgrades, as initial

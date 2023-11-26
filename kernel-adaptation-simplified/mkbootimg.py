@@ -28,6 +28,8 @@ import os
 import re
 import tempfile
 
+from gki.generate_gki_certificate import generate_gki_certificate
+
 # Constant and structure definition is in
 # system/tools/mkbootimg/include/bootimg/bootimg.h
 BOOT_MAGIC = 'ANDROID!'
@@ -580,6 +582,42 @@ def parse_cmdline():
     return args
 
 
+def add_boot_image_signature(args, pagesize):
+    """Adds the boot image signature.
+
+    Note that the signature will only be verified in VTS to ensure a
+    generic boot.img is used. It will not be used by the device
+    bootloader at boot time. The bootloader should only verify
+    the boot vbmeta at the end of the boot partition (or in the top-level
+    vbmeta partition) via the Android Verified Boot process, when the
+    device boots.
+    """
+    # Flush the buffer for signature calculation.
+    args.output.flush()
+
+    # Outputs the signed vbmeta to a separate file, then append to boot.img
+    # as the boot signature.
+    with tempfile.TemporaryDirectory() as temp_out_dir:
+        boot_signature_output = os.path.join(temp_out_dir, 'boot_signature')
+        generate_gki_certificate(
+            image=args.output.name, avbtool=args.gki_signing_avbtool_path,
+            name='boot', algorithm=args.gki_signing_algorithm,
+            key=args.gki_signing_key, salt='d00df00d',
+            additional_avb_args=args.gki_signing_signature_args.split(),
+            output=boot_signature_output,
+        )
+        with open(boot_signature_output, 'rb') as boot_signature:
+            boot_signature_bytes = boot_signature.read()
+            if len(boot_signature_bytes) > BOOT_IMAGE_V4_SIGNATURE_SIZE:
+                raise ValueError(
+                    f'boot sigature size is > {BOOT_IMAGE_V4_SIGNATURE_SIZE}')
+            boot_signature_bytes += b'\x00' * (
+                BOOT_IMAGE_V4_SIGNATURE_SIZE - len(boot_signature_bytes))
+            assert len(boot_signature_bytes) == BOOT_IMAGE_V4_SIGNATURE_SIZE
+            args.output.write(boot_signature_bytes)
+            pad_file(args.output, pagesize)
+
+
 def write_data(args, pagesize):
     write_padded_file(args.output, args.kernel, pagesize)
     write_padded_file(args.output, args.ramdisk, pagesize)
@@ -590,6 +628,8 @@ def write_data(args, pagesize):
         write_padded_file(args.output, args.recovery_dtbo, pagesize)
     if args.header_version == 2:
         write_padded_file(args.output, args.dtb, pagesize)
+    if args.header_version >= 4 and should_add_legacy_gki_boot_signature(args):
+        add_boot_image_signature(args, pagesize)
 
 
 def write_vendor_boot_data(args):
