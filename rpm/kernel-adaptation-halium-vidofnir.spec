@@ -8,7 +8,7 @@
 
 #Compiler to use
 %define compiler CC=clang
-%define compileropts CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 V=1 HOSTLDFLAGS="-fuse-ld=lld" CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi-
+%define compileropts CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 HOSTLDFLAGS="-fuse-ld=lld" CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi-
 #define compiler #{nil}
 #define compileropts #{nil}
 
@@ -21,7 +21,8 @@
 %define device_target_cpu aarch64
 
 # Defconfig to pick-up
-%define defconfig sfos-gx4_defconfig
+%define extra_config sfos_gx4.config
+%define defconfig gki_defconfig gx4.config entry_level.config halium.config %{extra_config}
 
 # Linux kernel source directory
 %define source_directory linux/
@@ -36,14 +37,17 @@
 %define apply_patches 1
 
 %define ramdisk ramdisk-vidofnir.img
+
+%define build_vendor_boot 1
 ##define build_dtboimg 1
 
 # Build and pick-up the following devicetrees
 ##define devicetrees
 
 #Device Info
-%define deviceinfo_kernel_cmdline bootopt=64S3,32N2,64N2 systempart=/dev/mapper/system
+%define deviceinfo_kernel_cmdline bootopt=64S3,32N2,64N2 systempart=/dev/mapper/system binder.global_pid_lookups=0
 %define deviceinfo_dtb mediatek/mt6789.dtb
+%define deviceinfo_ramdisk_compression lz4
 %define deviceinfo_flash_pagesize 4096
 %define deviceinfo_flash_offset_base 0x0
 %define deviceinfo_flash_offset_kernel 0x40000000
@@ -57,5 +61,6 @@
 %define deviceinfo_bootimg_os_patch_level 2022-06
 %define deviceinfo_rootfs_image_sector_size 4096
 %define deviceinfo_halium_version 12
+%define deviceinfo_kernel_disable_modules false
 
 %include kernel-adaptation-simplified/kernel-adaptation-simplified.inc
