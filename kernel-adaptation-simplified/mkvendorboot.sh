@@ -1,9 +1,9 @@
 #!/bin/bash
 
 HERE=`pwd`
-INSTALL_MOD_PATH="$HERE/installroot/lib/modules/"
+INSTALL_MOD_PATH="$HERE/buildroot/lib/modules/"
 TMPDIR="$HERE/tmp"
-MKBOOTIMG="python3 $HERE/kernel-adaptation-simplified/mkbootimg.py"
+MKBOOTIMG="python3 $MKBOOTIMG_PATH/mkbootimg.py"
 EXTRA_VENDOR_ARGS=""
 DTB=$1
 echo $?

@@ -52,7 +52,7 @@ Source:         %{name}-%{version}.tar.bz2
 Requires(pre):  kmod >= 9
 BuildRequires:  pkgconfig(ncurses)
 BuildRequires:  pkgconfig(openssl)
-BuildRequires:  mer-kernel-checks
+#BuildRequires:  mer-kernel-checks
 BuildRequires:  kmod >= 9
 #BuildRequires:  perl
 #BuildRequires:  fdupes
@@ -65,8 +65,8 @@ BuildRequires:  openssl
 #!BuildIgnore:  rpmlint-mini
 BuildRequires:  dtc
 BuildRequires:  clang
-BuildRequires:  lld
-BuildRequires:  llvm
+#BuildRequires:  lld
+#BuildRequires:  llvm
 BuildRequires:  lz4
 
 %if 0%{?crossbuild:1}
@@ -83,17 +83,22 @@ BuildRequires:  cross-%{crossbuild}-as
 
 %build
 
-rm -rf %{_tmpdir}
-mkdir -p %{_tmpdir}
-
 export ARCH=%{kernel_arch}
 export LOCALVERSION="-%{device}"
+export CLANG_TRIPLE=%{clangtriple}
+export CROSS_COMPILE=%{crosscompile}
+export CROSS_COMPILE32=%{crosscompile32}
+export HOSTLDFLAGS=%{hostldflags}
+
+rm -rf %{_tmpdir}
+mkdir -p %{_tmpdir}
 
 %if 0%{?crossbuild:1}
 export CROSS_COMPILE=%{crossbuild}-meego-linux-gnu-
 # FIXME? Shouldn't be needed
 export PATH=/opt/cross/bin/:$PATH
 %endif
+
 
 #defconfig_name=$(basename %{defconfig})
 #[ -e "./%{defconfig}" ] && cp -f ./%{defconfig} %{source_directory}/arch/%{kernel_arch}/configs/$defconfig_name
@@ -109,20 +114,17 @@ sh patches/apply-patches.sh %{source_directory}
 
 echo "***** Cleaning *****"
 #make -C %{source_directory} O=out clean
-#rm -rf %{source_directory}/out/*
-
-#echo "***** Making defconfig *****"
-#make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} O=out defconfig KBUILD_DEFCONFIG=$defconfig_name
+rm -rf %{source_directory}/out/*
 
 %if 0%{?build_Image:1}
 echo "***** Building Image *****"
-DTC_EXT=/usr/bin/dtc make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} -j$(nproc) O=out %{kcflags} %{defconfig}
-DTC_EXT=/usr/bin/dtc make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} -j$(nproc) O=out %{kcflags}
+make %{makeopts} -C %{source_directory} -j$(nproc) O=out %{kcflags} %{defconfig}
+make %{makeopts} -C %{source_directory} -j$(nproc) O=out %{kcflags}
 %endif
 
 %if 0%{?build_modules:1}
 echo "***** Building Modules *****"
-make %{compiler} %{compileropts} ARCH=%{kernel_arch} -C %{source_directory} -j$(nproc) O=out %{kcflags} modules
+make %{makeopts} -C %{source_directory} -j$(nproc) O=out %{kcflags} modules
 %endif
 
 %if 0%{?build_dtboimage:1}
@@ -133,9 +135,16 @@ python2 kernel-adaptation-simplified/mkdtboimg.py create linux/out/dtbo.img %{so
 %install
 echo "***** Installing *****"
 
+export ARCH=%{kernel_arch}
+export LOCALVERSION="-%{device}"
+export CLANG_TRIPLE=%{clangtriple}
+export CROSS_COMPILE=%{crosscompile}
+export CROSS_COMPILE32=%{crosscompile32}
+export HOSTLDFLAGS=%{hostldflags}
+
 %if %{build_modules}
     mkdir -p %{buildroot}/lib/modules
-    make -C %{source_directory} O=out %{compiler} %{compileropts} INSTALL_MOD_STRIP=1 modules_install INSTALL_MOD_PATH=%{buildroot}
+    make -C %{source_directory} O=out %{makeopts} INSTALL_MOD_STRIP=1 modules_install INSTALL_MOD_PATH=%{buildroot}
 %endif
 
 echo "***** Building Boot Image *****"
@@ -144,6 +153,8 @@ DTB=%{source_directory}/out/arch/%{kernel_arch}/boot/dts/%{deviceinfo_dtb}
 EXTRA_ARGS=""
 RAMDISK=%{ramdisk}
 OUT=%{source_directory}/out/arch/%{kernel_arch}/boot/boot.img
+
+mkdir -p %{buildroot}/boot
 
 if [ "%{deviceinfo_bootimg_header_version}" -le 2 ]; then
     EXTRA_ARGS+=" --base %{deviceinfo_flash_offset_base} --kernel_offset %{deviceinfo_flash_offset_kernel} --ramdisk_offset %{deviceinfo_flash_offset_ramdisk} --second_offset %{deviceinfo_flash_offset_second} --tags_offset %{deviceinfo_flash_offset_tags} --pagesize %{deviceinfo_flash_pagesize}"
@@ -155,9 +166,9 @@ fi
 
 #Createl boot.img
 if [ "%{deviceinfo_bootimg_header_version}" -le 2 ]; then
-    python3 ./kernel-adaptation-simplified/mkbootimg.py --kernel "$KERNEL" --ramdisk "$RAMDISK" --cmdline "%{deviceinfo_kernel_cmdline}" --header_version %{deviceinfo_bootimg_header_version} -o "$OUT" --os_version %{deviceinfo_bootimg_os_version} --os_patch_level %{deviceinfo_bootimg_os_patch_level} $EXTRA_ARGS
+    python3 $MKBOOTIMG_PATH/mkbootimg.py --kernel "$KERNEL" --ramdisk "$RAMDISK" --cmdline "%{deviceinfo_kernel_cmdline}" --header_version %{deviceinfo_bootimg_header_version} -o "$OUT" --os_version %{deviceinfo_bootimg_os_version} --os_patch_level %{deviceinfo_bootimg_os_patch_level} $EXTRA_ARGS
 else
-    python3 ./kernel-adaptation-simplified/mkbootimg.py --kernel "$KERNEL" --ramdisk "$RAMDISK" --header_version %{deviceinfo_bootimg_header_version} -o "$OUT" --os_version %{deviceinfo_bootimg_os_version} --os_patch_level %{deviceinfo_bootimg_os_patch_level} $EXTRA_ARGS
+    python3 $MKBOOTIMG_PATH/mkbootimg.py --kernel "$KERNEL" --ramdisk "$RAMDISK" --header_version %{deviceinfo_bootimg_header_version} -o "$OUT" --os_version %{deviceinfo_bootimg_os_version} --os_patch_level %{deviceinfo_bootimg_os_patch_level} $EXTRA_ARGS
 
     # Build vendor_boot
     %if 0%{?build_vendor_boot:1}
@@ -180,6 +191,7 @@ else
         export DEVICEINFO_KERNEL_DISABLE_MODULES=%{deviceinfo_kernel_disable_modules}
 
         bash ./kernel-adaptation-simplified/mkvendorboot.sh "$DTB"
+        cp tmp/vendor-ramdisk/vendor_boot.img %{buildroot}/boot/ || true
     %endif
 fi
 
@@ -187,14 +199,12 @@ fi
 if [ -n "%{deviceinfo_bootimg_partition_size}" ]; then
     EXTRA_ARGS=""
     [ -f "$HERE/rsa4096_boot.pem" ] && EXTRA_ARGS=" --key $HERE/rsa4096_boot.pem --algorithm SHA256_RSA4096"
-    python2 "./kernel-adaptation-simplified/avbtool" add_hash_footer --image "$OUT" --partition_name boot --partition_size %{deviceinfo_bootimg_partition_size} $EXTRA_ARGS
+    python3 "$AVB_PATH/avbtool.py" add_hash_footer --image "$OUT" --partition_name boot --partition_size %{deviceinfo_bootimg_partition_size} $EXTRA_ARGS
 
     if [ -n "%{deviceinfo_bootimg_append_vbmeta}" ] && %{deviceinfo_bootimg_append_vbmeta}; then
-        python2 "./kernel-adaptation-simplified/avbtool" append_vbmeta_image --image "$OUT" --partition_size "%{deviceinfo_bootimg_partition_size}" --vbmeta_image "$TMPDOWN/vbmeta.img"
+        python3 "$AVB_PATH/avbtool.py" append_vbmeta_image --image "$OUT" --partition_size "%{deviceinfo_bootimg_partition_size}" --vbmeta_image "$TMPDOWN/vbmeta.img"
     fi
 fi
-
-mkdir -p %{buildroot}/boot
 
 %if %{build_Image}
 echo "***** Installing Image *****"

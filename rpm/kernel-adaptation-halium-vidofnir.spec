@@ -4,11 +4,15 @@
 # Kernel target architecture
 %define kernel_arch arm64
 
-%define kcflags "KCFLAGS=-Wno-incompatible-library-redeclaration -Wno-bitwise-instead-of-logical -Wno-fortify-source -Wno-unused-but-set-variable -Wno-error=unused-but-set-variable"
+%define kcflags "KCFLAGS="
 
 #Compiler to use
-%define compiler CC=clang
-%define compileropts CLANG_TRIPLE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 HOSTLDFLAGS="-fuse-ld=lld" CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi-
+%define makeopts LLVM=1 LLVM_IAS=1
+%define clangtriple aarch64-linux-gnu-
+%define crosscompile aarch64-linux-gnu-
+%define crosscompile32 arm-linux-androideabi-
+%define hostldflags "-fuse-ld=lld --rtlib=compiler-rt"
+
 #define compiler #{nil}
 #define compileropts #{nil}
 
