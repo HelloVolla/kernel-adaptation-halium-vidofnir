@@ -114,6 +114,7 @@ sh patches/apply-patches.sh %{source_directory}
 
 echo "***** Cleaning *****"
 #make -C %{source_directory} O=out clean
+mkdir -p %{source_directory}/out
 rm -rf %{source_directory}/out/*
 
 %if 0%{?build_Image:1}
