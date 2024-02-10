@@ -226,8 +226,6 @@ cp %{source_directory}/out/dtbo.img %{buildroot}/boot/ || true
 
 
 #Remove some kernel modules from the install
-rm -f %{buildroot}/lib/modules/*/kernel/drivers/media/platform/mtk-isp/mtk-hcp/mtk_hcp.ko
-rm -f %{buildroot}/lib/modules/*/kernel/drivers/misc/mediatek/connectivity/common/wmt_drv.ko
 
 # Build filelist
 find %{buildroot} ! \( -type d \) | sed -e s,"%{buildroot}",,g> %{_tmpdir}/kernel-adaptation.files
