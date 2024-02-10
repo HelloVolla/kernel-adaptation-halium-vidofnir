@@ -67,7 +67,7 @@
 %define deviceinfo_halium_version 12
 %define deviceinfo_kernel_disable_modules false
 
-Version:        5.10.110
+Version:        5.10.160
 Release:        1
 
 %include kernel-adaptation-simplified/kernel-adaptation-simplified.inc
