@@ -46,6 +46,9 @@ Summary:        Kernel adaptation for %{rpm_device}
 Group:          System
 License:        GPLv2
 Provides:       kernel
+Provides:       droid-hal-kernel
+Provides:       droid-hal-img-boot
+Provides:       droid-hal-img-recovery
 Source:         %{name}-%{version}.tar.bz2
 Requires(pre):  kmod >= 9
 BuildRequires:  pkgconfig(ncurses)
@@ -57,7 +60,7 @@ BuildRequires:  kmod >= 9
 BuildRequires:  flex
 BuildRequires:  bison
 BuildRequires:  bc
-BuildRequires:  python
+BuildRequires:  python3
 BuildRequires:  python3-base
 BuildRequires:  openssl
 #!BuildIgnore:  rpmlint-mini
@@ -97,12 +100,9 @@ export CROSS_COMPILE=%{crossbuild}-meego-linux-gnu-
 export PATH=/opt/cross/bin/:$PATH
 %endif
 
-
-#defconfig_name=$(basename %{defconfig})
-#[ -e "./%{defconfig}" ] && cp -f ./%{defconfig} %{source_directory}/arch/%{kernel_arch}/configs/$defconfig_name
-
+%if 0%{?extra_config:1} != 0
 [ -e "./%{extra_config}" ] && cp -f ./%{extra_config} %{source_directory}/arch/%{kernel_arch}/configs/%{extra_config}
-
+%endif
 
 %if 0%{?apply_patches:1}
 #Apply any patches
@@ -111,13 +111,11 @@ sh patches/apply-patches.sh %{source_directory}
 %endif
 
 echo "***** Cleaning *****"
-#make -C %{source_directory} O=out clean
-mkdir -p %{source_directory}/out
-rm -rf %{source_directory}/out/*
+#make -C %{source_directory} O=out clean || true
 
 %if 0%{?build_Image:1}
 echo "***** Building Image *****"
-make %{makeopts} -C %{source_directory} -j$(nproc) O=out %{kcflags} %{defconfig}
+make %{makeopts} -C %{source_directory} -j$(nproc) O=out %{kcflags} %{kernel_config}
 make %{makeopts} -C %{source_directory} -j$(nproc) O=out %{kcflags}
 %endif
 
@@ -142,8 +140,8 @@ export CROSS_COMPILE32=%{crosscompile32}
 export HOSTLDFLAGS=%{hostldflags}
 
 %if %{build_modules}
-    mkdir -p %{buildroot}/lib/modules
-    make -C %{source_directory} O=out %{makeopts} INSTALL_MOD_STRIP=1 modules_install INSTALL_MOD_PATH=%{buildroot}
+mkdir -p %{buildroot}/lib/modules
+make -C %{source_directory} O=out %{makeopts} INSTALL_MOD_STRIP=1 modules_install INSTALL_MOD_PATH=%{buildroot}
 %endif
 
 echo "***** Building Boot Image *****"
@@ -214,9 +212,9 @@ cp %{source_directory}/out/arch/%{kernel_arch}/boot/boot.img %{buildroot}/boot/ 
 
 %if 0%{?devicetrees:1}
 for dtb in %{devicetrees}; do
-	mkdir -p %{buildroot}/boot/$(basename $(dirname $dtb))
-	cp linux/out/arch/%{kernel_arch}/boot/dts/$dtb %{buildroot}/boot/$dtb
-	cp %{buildroot}/boot/*/*.dtb %{buildroot}/boot/
+    mkdir -p %{buildroot}/boot/$(basename $(dirname $dtb))
+    cp linux/out/arch/%{kernel_arch}/boot/dts/$dtb %{buildroot}/boot/$dtb
+    cp %{buildroot}/boot/*/*.dtb %{buildroot}/boot/
 done
 %endif
 

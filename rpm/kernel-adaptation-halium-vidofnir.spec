@@ -25,8 +25,9 @@
 %define device_target_cpu aarch64
 
 # Defconfig to pick-up
+%define defconfig gki_defconfig gx4.config entry_level.config halium.config
 %define extra_config sfos_gx4.config
-%define defconfig gki_defconfig gx4.config entry_level.config halium.config %{extra_config}
+%define kernel_config %{defconfig} %{extra_config}
 
 # Linux kernel source directory
 %define source_directory linux/
@@ -43,14 +44,15 @@
 %define ramdisk ramdisk-vidofnir.img
 
 %define build_vendor_boot 1
-##define build_dtboimg 1
+%define build_dtboimage 1
 
 # Build and pick-up the following devicetrees
 ##define devicetrees
 
 #Device Info
-%define deviceinfo_kernel_cmdline bootopt=64S3,32N2,64N2 systempart=/dev/mapper/system binder.global_pid_lookups=0
+%define deviceinfo_kernel_cmdline bootopt=64S3,32N2,64N2 systempart=/dev/mapper/system binder.global_pid_lookups=0 init=/init
 %define deviceinfo_dtb mediatek/mt6789.dtb
+%define deviceinfo_dtbo mediatek/k6789v1_64.dtbo
 %define deviceinfo_ramdisk_compression lz4
 %define deviceinfo_flash_pagesize 4096
 %define deviceinfo_flash_offset_base 0x0
@@ -67,10 +69,7 @@
 %define deviceinfo_halium_version 12
 %define deviceinfo_kernel_disable_modules false
 
-Version:        4.19.191
-Release:        1
-Provides:       droid-hal-kernel
-Provides:       droid-hal-img-boot
-Provides:       droid-hal-img-recovery
+Version:        5.10.160
+Release:        2
 
 %include kernel-adaptation-simplified/kernel-adaptation-simplified.inc
