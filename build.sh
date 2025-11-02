@@ -17,6 +17,7 @@ if [ ! -f "$ANDRDOID_BUILD_TOOLS_PATH/.complete" ]; then
 	git clone https://android.googlesource.com/kernel/prebuilts/build-tools -b master-kernel-build-2021 $ANDRDOID_BUILD_TOOLS_PATH/kernel-build-tools --depth 1 --recursive
 	git clone https://github.com/LineageOS/android_system_tools_mkbootimg -b lineage-20.0 $ANDRDOID_BUILD_TOOLS_PATH/android_system_tools_mkbootimg --depth 1 --recursive
 
+	git clone https://android.googlesource.com/platform/prebuilts/python/linux-x86/2.7.5/ --depth 1 --recursive
 	echo "Tools download complete"
 	touch $ANDRDOID_BUILD_TOOLS_PATH/.complete
 else
@@ -32,8 +33,9 @@ export GCC_PATH=$ANDRDOID_BUILD_TOOLS_PATH/aarch64-linux-android-4.9/bin
 export GCC_ARM32_PATH=$ANDRDOID_BUILD_TOOLS_PATH/arm-linux-androideabi-4.9/bin
 export AVB_PATH=$ANDRDOID_BUILD_TOOLS_PATH/avb
 export MKBOOTIMG_PATH=$ANDRDOID_BUILD_TOOLS_PATH/android_system_tools_mkbootimg
+export PYTHON2_PATH=$ANDRDOID_BUILD_TOOLS_PATH/2.7.5/bin
 
-export PATH=$CLANG_PATH:$BUILD_TOOLS_BIN:$KERNEL_BUILD_TOOLS_BIN:$GCC_PATH:$GCC_ARM32_PATH:$AVB_PATH:$MKBOOTIMG_PATH:$PATH
+export PATH=$CLANG_PATH:$BUILD_TOOLS_BIN:$KERNEL_BUILD_TOOLS_BIN:$GCC_PATH:$GCC_ARM32_PATH:$AVB_PATH:$MKBOOTIMG_PATH:$PYTHON2_PATH:$PATH
 
 
 #Build the RPM
