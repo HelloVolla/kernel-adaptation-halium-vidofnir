@@ -15,7 +15,7 @@ else
 	COMPRESSION_CMD="lz4 -l -9"
 fi
 
-if [ -d "overlay/vendor-ramdisk-overlay" ]; then
+if [ -d "$HERE/overlay/vendor-ramdisk-overlay" ]; then
 	VENDOR_RAMDISK="../ramdisk-vendor_boot.img"
 	rm -rf "$TMPDIR/vendor-ramdisk"
 	mkdir -p "$TMPDIR/vendor-ramdisk"
