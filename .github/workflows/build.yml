@@ -31,7 +31,7 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          dnf install -y rpmdevtools git glibc.i686 openssl-devel-engine nodejs
+          dnf install -y rpmdevtools glibc.i686 openssl-devel-engine nodejs
           dnf builddep -y rpm/*.spec
 
       - name: Build RPM package
