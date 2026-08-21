@@ -15,6 +15,9 @@ jobs:
       image: fedora:latest
 
     steps:
+      - name: Install git
+        run: dnf install -y git
+
       - name: Checkout code and submodules
         uses: actions/checkout@v3
         with:
