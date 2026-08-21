@@ -41,13 +41,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PACKAGE }}-${{ env.DEVICE }}-${{ env.KERNEL_VERSION }}-${{ env.RELEASE }}.aarch64.rpm
-          path: /root/rpmbuild/RPMS/aarch64/*.rpm
+          path: /github/home/rpmbuild/RPMS/aarch64/*.rpm
 
       - name: Upload package to GitHub Releases
         if: ${{ !env.ACT }}
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.KERNEL_VERSION }}-${{ env.RELEASE }}
-          files: /root/rpmbuild/RPMS/aarch64/*.rpm
+          files: /github/home/rpmbuild/RPMS/aarch64/*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
