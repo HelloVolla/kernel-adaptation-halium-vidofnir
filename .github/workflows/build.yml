@@ -15,8 +15,10 @@ jobs:
       image: fedora:latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout code and submodules
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Read environment configuration file
         id: read-file
