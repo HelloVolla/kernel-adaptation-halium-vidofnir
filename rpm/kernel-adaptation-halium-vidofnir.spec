@@ -30,7 +30,7 @@
 %define kernel_config %{defconfig} %{extra_config}
 
 # Linux kernel source directory
-%define source_directory linux/
+%define source_directory linux
 
 # Build modules
 %define build_modules 1
@@ -42,6 +42,7 @@
 %define apply_patches 1
 
 %define ramdisk ramdisk-vidofnir.img
+
 
 %define build_vendor_boot 1
 %define build_dtboimage 1

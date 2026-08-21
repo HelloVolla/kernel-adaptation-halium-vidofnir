@@ -35,7 +35,10 @@ jobs:
           dnf builddep -y rpm/*.spec
 
       - name: Build RPM package
-        run: ./build.sh
+        run: |
+          export BUILD_TOOLS_BRANCH=master-kernel-build-2021
+          source kernel-adaptation-simplified/setup-env.sh
+          rpmbuild --build-in-place --define 'debug_package %{nil}' --bb rpm/${PACKAGE}-${DEVICE}.spec --buildroot=$PWD/buildroot
 
       - name: Upload package
         uses: actions/upload-artifact@v4
