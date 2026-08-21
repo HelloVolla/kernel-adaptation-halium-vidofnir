@@ -20,7 +20,7 @@
 %endif
 
 %if 0%{!?source_directory:1}
-%define source_directory linux/
+%define source_directory linux
 %endif
 
 %if 0%{!?build_Image:1}
