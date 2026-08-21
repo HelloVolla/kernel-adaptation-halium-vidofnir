@@ -33,7 +33,7 @@ jobs:
         run: ./build.sh
 
       - name: Upload package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PACKAGE }}-${{ env.DEVICE }}-${{ env.KERNEL_VERSION }}-${{ env.RELEASE }}.aarch64.rpm
           path: /root/rpmbuild/RPMS/aarch64/*.rpm
