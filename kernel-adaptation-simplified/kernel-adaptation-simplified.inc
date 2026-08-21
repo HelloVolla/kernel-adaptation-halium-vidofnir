@@ -53,21 +53,15 @@ Source:         %{name}-%{version}.tar.bz2
 Requires(pre):  kmod >= 9
 BuildRequires:  pkgconfig(ncurses)
 BuildRequires:  pkgconfig(openssl)
-#BuildRequires:  mer-kernel-checks
 BuildRequires:  kmod >= 9
-#BuildRequires:  perl
-#BuildRequires:  fdupes
 BuildRequires:  flex
 BuildRequires:  bison
 BuildRequires:  bc
 BuildRequires:  python3
-BuildRequires:  python3-base
 BuildRequires:  openssl
 #!BuildIgnore:  rpmlint-mini
 BuildRequires:  dtc
 BuildRequires:  clang
-#BuildRequires:  lld
-#BuildRequires:  llvm
 BuildRequires:  lz4
 
 %if 0%{?crossbuild:1}
@@ -105,13 +99,9 @@ export PATH=/opt/cross/bin/:$PATH
 %endif
 
 %if 0%{?apply_patches:1}
-#Apply any patches
 echo "***** Applying patches *****"
 sh patches/apply-patches.sh %{source_directory}
 %endif
-
-echo "***** Cleaning *****"
-#make -C %{source_directory} O=out clean || true
 
 %if 0%{?build_Image:1}
 echo "***** Building Image *****"
@@ -212,9 +202,9 @@ cp %{source_directory}/out/arch/%{kernel_arch}/boot/boot.img %{buildroot}/boot/ 
 
 %if 0%{?devicetrees:1}
 for dtb in %{devicetrees}; do
-    mkdir -p %{buildroot}/boot/$(basename $(dirname $dtb))
-    cp linux/out/arch/%{kernel_arch}/boot/dts/$dtb %{buildroot}/boot/$dtb
-    cp %{buildroot}/boot/*/*.dtb %{buildroot}/boot/
+mkdir -p %{buildroot}/boot/$(basename $(dirname $dtb))
+cp linux/out/arch/%{kernel_arch}/boot/dts/$dtb %{buildroot}/boot/$dtb
+cp %{buildroot}/boot/*/*.dtb %{buildroot}/boot/
 done
 %endif
 
@@ -222,12 +212,9 @@ done
 cp %{source_directory}/out/dtbo.img %{buildroot}/boot/ || true
 %endif
 
-
-#Remove some kernel modules from the install
-
 # Build filelist
+find %{buildroot} -type f -empty -delete
 find %{buildroot} ! \( -type d \) | sed -e s,"%{buildroot}",,g> %{_tmpdir}/kernel-adaptation.files
-
 
 %post
 # This oneshot is enabled only during package upgrades, as initial
