@@ -1,0 +1,48 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PACKAGE: kernel-adaptation-halium
+  DEVICE: vidofnir
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Read environment configuration file
+        id: read-file
+        run: |
+          echo "KERNEL_VERSION=$(cat rpm/${PACKAGE}-${DEVICE}.spec | grep '^Version:' | awk '{print $2}')" >> $GITHUB_ENV
+          echo "RELEASE=$(cat rpm/${PACKAGE}-${DEVICE}.spec | grep '^Release:' | awk '{print $2}')" >> $GITHUB_ENV
+
+      - name: Install build dependencies
+        run: |
+          dnf install -y rpmdevtools git glibc.i686 openssl-devel-engine nodejs
+          dnf builddep -y rpm/*.spec
+
+      - name: Build RPM package
+        run: ./build.sh
+
+      - name: Upload package
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.PACKAGE }}-${{ env.DEVICE }}-${{ env.KERNEL_VERSION }}-${{ env.RELEASE }}.aarch64.rpm
+          path: /root/rpmbuild/RPMS/aarch64/*.rpm
+
+      - name: Upload package to GitHub Releases
+        if: ${{ !env.ACT }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.KERNEL_VERSION }}-${{ env.RELEASE }}
+          files: /root/rpmbuild/RPMS/aarch64/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
