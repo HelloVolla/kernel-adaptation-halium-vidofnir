@@ -41,6 +41,8 @@
 # Apply Patches
 %define apply_patches 1
 
+%define ramdisk ramdisk-vidofnir.img
+
 
 %define build_vendor_boot 1
 %define build_dtboimage 1
